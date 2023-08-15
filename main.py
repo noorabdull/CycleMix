@@ -43,9 +43,9 @@ def get_args_parser():
     
     # Puzzle Mix
     parser.add_argument('--in_batch', type=str2bool, default=False, help='whether to use different lambdas in batch')
-    parser.add_argument('--mixup_alpha', type=float, help='alpha parameter for mixup')
+    parser.add_argument('--mixup_alpha',default=0.5, type=float, help='alpha parameter for mixup')
     parser.add_argument('--box', type=str2bool, default=False, help='true for CutMix')
-    parser.add_argument('--graph', type=str2bool, default=False, help='true for PuzzleMix')
+    parser.add_argument('--graph', type=str2bool, default=True, help='true for PuzzleMix')
     parser.add_argument('--neigh_size', type=int, default=4, help='neighbor size for computing distance beteeen image regions')
     parser.add_argument('--n_labels', type=int, default=3, help='label space size')
 
@@ -55,7 +55,7 @@ def get_args_parser():
 
     parser.add_argument('--transport', type=str2bool, default=True, help='whether to use transport')
     parser.add_argument('--t_eps', type=float, default=0.8, help='transport cost coefficient')
-    parser.add_argument('--t_size', type=int, default=-1, help='transport resolution. -1 for using the same resolution with graphcut')
+    parser.add_argument('--t_size', type=int, default=4, help='transport resolution. -1 for using the same resolution with graphcut')
 
     parser.add_argument('--adv_eps', type=float, default=10.0, help='adversarial training ball')
     parser.add_argument('--adv_p', type=float, default=0.0, help='adversarial training probability')
