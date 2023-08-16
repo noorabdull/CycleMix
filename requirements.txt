@@ -1,7 +1,7 @@
 scipy
 tensorboardX
-mmdet 
-mmcv
 einops
 SimpleITK
 scikit-image
+medpy
+gco-wrapper
