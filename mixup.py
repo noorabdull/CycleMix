@@ -233,7 +233,7 @@ def mixup_graph(input1,target_reweighted, grad1, indices, block_num=2, alpha=0.5
         mask = mp.starmap(graphcut_multi, input_mp)
     
     # optimal mask
-    mask = torch.tensor(mask, dtype=torch.float32, device=device)
+    mask = torch.tensor(np.array(mask), dtype=torch.float32, device=device)
     mask = mask.unsqueeze(1)
 
     # add adversarial noise

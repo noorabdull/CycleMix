@@ -5,7 +5,7 @@ import torchvision.transforms.functional as F
 import numpy as np
 import PIL 
 from PIL import Image
-from util.misc import interpolate
+# from util.misc import interpolate
 from skimage import transform
 
 
@@ -172,7 +172,8 @@ class Rescale(object):
                                     scale_vector_img,
                                     order=1,
                                     preserve_range=True,
-                                    multichannel=False,
+                                    # multichannel=False,
+                                    channel_axis = False,
                                     mode='constant')
         img = np.expand_dims(img, axis=0)
         if "masks" in target:
@@ -181,7 +182,8 @@ class Rescale(object):
                                             scale_vector_target,
                                             order=0,
                                             preserve_range=True,
-                                            multichannel=False,
+                                            # multichannel=False,
+                                            channel_axis = False,
                                             anti_aliasing = False,
                                             mode='constant')
             mask = np.expand_dims(mask, axis=0)
