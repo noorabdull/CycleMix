@@ -3,7 +3,7 @@ import torch
 import torchvision.transforms as T
 import torchvision.transforms.functional as F
 import numpy as np
-import PIL 
+import PIL
 from PIL import Image
 # from util.misc import interpolate
 from skimage import transform
@@ -12,26 +12,26 @@ from skimage import transform
 def hflip(image, target):
     flipped_image = image
     if random.random() < 0.5:
-        flipped_image = np.flip(flipped_image,(1))
+        flipped_image = np.flip(flipped_image, 1)
         target = target.copy()
         if "masks" in target:
             mask = target['masks']
-            target['masks'] = np.flip(mask,(1))
+            target['masks'] = np.flip(mask, 1)
     if random.random() < 0.5:
-        flipped_image = np.flip(flipped_image,(2))
+        flipped_image = np.flip(flipped_image, 2)
         target = target.copy()
         if "masks" in target:
             mask = target['masks']
-            target['masks'] = np.flip(mask,(2))
-    rotate_choice = int(random.random()*4)
-    flipped_image = np.rot90(flipped_image, k=rotate_choice, axes=(1,2))
+            target['masks'] = np.flip(mask, 2)
+    rotate_choice = int(random.random() * 4)
+    flipped_image = np.rot90(flipped_image, k=rotate_choice, axes=(1, 2))
     if "masks" in target:
         mask = target['masks']
-        target['masks'] = np.rot90(mask, k=rotate_choice, axes=(1,2))
+        target['masks'] = np.rot90(mask, k=rotate_choice, axes=(1, 2))
     return flipped_image, target
 
-def crop(image, target, region):
 
+def crop(image, target, region):
     i, j, h, w = region
     cropped_image = image[:, i:i + h, j:j + w]
 
@@ -45,42 +45,44 @@ def crop(image, target, region):
 
     return cropped_image, target
 
+
 def pad(image, target, region):
-    z,x,y = image.shape
-    nx,ny = region
+    z, x, y = image.shape
+    nx, ny = region
     x_s = (x - nx) // 2
     y_s = (y - ny) // 2
     x_c = (nx - x) // 2
     y_c = (ny - y) // 2
-    #print("source shape:",(z,x,y), "target shape:",(nx,ny))
+    # print("source shape:",(z,x,y), "target shape:",(nx,ny))
 
     if x > nx and y > ny:
-        slice_padded = image[:,x_s:x_s + nx, y_s:y_s + ny]
+        slice_padded = image[:, x_s:x_s + nx, y_s:y_s + ny]
     else:
-        slice_padded = np.zeros((z,nx, ny), dtype = np.float32)
+        slice_padded = np.zeros((z, nx, ny), dtype=np.float32)
         if x <= nx and y > ny:
             slice_padded[:, x_c:x_c + x, :] = image[:, :, y_s:y_s + ny]
         elif x > nx and y <= ny:
-            slice_padded[:,:, y_c:y_c + y] = image[:,x_s:x_s + nx, :]
+            slice_padded[:, :, y_c:y_c + y] = image[:, x_s:x_s + nx, :]
         else:
-            slice_padded[:,x_c:x_c + x, y_c:y_c + y] = image[:,:, :]
+            slice_padded[:, x_c:x_c + x, y_c:y_c + y] = image[:, :, :]
 
     if "masks" in target:
         mask = target["masks"]
         if x > nx and y > ny:
-            mask_padded = mask[:,x_s:x_s + nx, y_s:y_s + ny]
+            mask_padded = mask[:, x_s:x_s + nx, y_s:y_s + ny]
         else:
-            mask_padded = np.zeros((z,nx, ny), dtype = np.float32)
+            mask_padded = np.zeros((z, nx, ny), dtype=np.float32)
             if x <= nx and y > ny:
                 mask_padded[:, x_c:x_c + x, :] = mask[:, :, y_s:y_s + ny]
             elif x > nx and y <= ny:
-                mask_padded[:,:, y_c:y_c + y] = mask[:,x_s:x_s + nx, :]
+                mask_padded[:, :, y_c:y_c + y] = mask[:, x_s:x_s + nx, :]
             else:
-                mask_padded[:,x_c:x_c + x, y_c:y_c + y] = mask[:,:, :]
-        
+                mask_padded[:, x_c:x_c + x, y_c:y_c + y] = mask[:, :, :]
+
         target['masks'] = mask_padded
 
-    return slice_padded, target 
+    return slice_padded, target
+
 
 def resize(image, target, size):
     min_scale = size[0]
@@ -88,13 +90,13 @@ def resize(image, target, size):
     img_width = image.shape[1]
     img_height = image.shape[2]
     target_scale = random.uniform(min_scale, max_scale)
-    rescaled_width = int(target_scale*img_width)
-    rescaled_height = int(target_scale*img_height)
-    #random.randint(min_size, max_size)
+    rescaled_width = int(target_scale * img_width)
+    rescaled_height = int(target_scale * img_height)
+    # random.randint(min_size, max_size)
     rescaled_size = [rescaled_width, rescaled_height]
     image = image.copy()
     image = torch.from_numpy(image)
-    rescaled_image = F.resize(image, rescaled_size, interpolation = PIL.Image.NEAREST)
+    rescaled_image = F.resize(image, rescaled_size, interpolation=PIL.Image.NEAREST)
     rescaled_image = rescaled_image.numpy()
 
     if target is None:
@@ -110,12 +112,13 @@ def resize(image, target, size):
         # interpolate_mask = mask[:, None].copy()
         interpolate_mask = mask.copy()
         interpolate_mask = torch.from_numpy(interpolate_mask)
-        mask = F.resize(interpolate_mask, rescaled_size, interpolation = PIL.Image.NEAREST)
+        mask = F.resize(interpolate_mask, rescaled_size, interpolation=PIL.Image.NEAREST)
         # mask = interpolate(interpolate_mask.float(), size, mode="nearest")[:, 0] > 0.5
         mask = mask.numpy()
         target['masks'] = mask
 
     return rescaled_image, target
+
 
 class RandomSizeCrop(object):
     def __init__(self, min_size: int, max_size: int):
@@ -125,7 +128,7 @@ class RandomSizeCrop(object):
     def __call__(self, img, target: dict):
         w = random.randint(self.min_size, min(img.width, self.max_size))
         h = random.randint(self.min_size, min(img.height, self.max_size))
-        region = T.RandomCrop.get_params(img, [h, w])
+        region = T.RandomCrop.get_params(img, (h, w))
         return crop(img, target, region)
 
 
@@ -159,6 +162,7 @@ class RandomResize(object):
     def __call__(self, img, target=None):
         return resize(img, target, self.size)
 
+
 class Rescale(object):
     def __init__(self):
         pass
@@ -168,27 +172,27 @@ class Rescale(object):
         scale_vector_img = imgs[1]
         target = targets[0]
         scale_vector_target = targets[1]
-        img = transform.rescale(img[0,:,:],
-                                    scale_vector_img,
-                                    order=1,
-                                    preserve_range=True,
-                                    # multichannel=False,
-                                    channel_axis = False,
-                                    mode='constant')
+        img = transform.rescale(img[0, :, :],
+                                scale_vector_img,
+                                order=1,
+                                preserve_range=True,
+                                # multichannel=False,
+                                channel_axis=False,
+                                mode='constant')
         img = np.expand_dims(img, axis=0)
         if "masks" in target:
             mask = target['masks']
-            mask = transform.rescale(mask[0,:,:],
-                                            scale_vector_target,
-                                            order=0,
-                                            preserve_range=True,
-                                            # multichannel=False,
-                                            channel_axis = False,
-                                            anti_aliasing = False,
-                                            mode='constant')
+            mask = transform.rescale(mask[0, :, :],
+                                     scale_vector_target,
+                                     order=0,
+                                     preserve_range=True,
+                                     # multichannel=False,
+                                     channel_axis=False,
+                                     anti_aliasing=False,
+                                     mode='constant')
             mask = np.expand_dims(mask, axis=0)
             target['masks'] = mask
-        return img,target
+        return img, target
 
 
 class RandomPad(object):
@@ -206,6 +210,7 @@ class RandomSelect(object):
     Randomly selects between transforms1 and transforms2,
     with probability p for transforms1 and (1 - p) for transforms2
     """
+
     def __init__(self, transforms1, transforms2, p=0.5):
         self.transforms1 = transforms1
         self.transforms2 = transforms2
@@ -225,6 +230,7 @@ class RandomErasing(object):
     def __call__(self, img, target):
         return self.eraser(img), target
 
+
 class PadOrCropToSize(object):
     def __init__(self, size):
         self.size = size
@@ -234,29 +240,41 @@ class PadOrCropToSize(object):
         padded_img, padded_target = pad(img, target, (crop_height, crop_width))
         return padded_img, padded_target
 
+
 class RandomRotate(object):
     def __init__(self, degrees, resample=False, expand=False, center=None):
         self.degrees = degrees
         self.resample = resample
         self.expand = expand
         self.center = center
-    
+
     @staticmethod
     def get_params(degrees):
-        angle = float(torch.empty(1).uniform_(float(degrees[0]), float(degrees[1])).item())
+        angle = float(
+                torch.empty(1).uniform_(
+                    float(
+                        degrees[0]
+                    ),
+                    float(
+                        degrees[1]
+                        )
+                ).item()
+        )
         return angle
+
     def __call__(self, img, target):
         angle = self.get_params(self.degrees)
         img = img.copy()
         rotated_img = F.rotate(torch.from_numpy(img), angle, PIL.Image.NEAREST, self.expand, self.center)
         rotated_img = rotated_img.numpy()
-        # if "masks" in target:
+        #  if "masks" in target:
         mask = target['masks']
         mask = mask.copy()
         rotated_mask = F.rotate(torch.from_numpy(mask), angle, PIL.Image.NEAREST, self.expand, self.center)
         rotated_mask = rotated_mask.numpy()
         target["masks"] = rotated_mask
         return rotated_img, target
+
 
 class RandomColorJitter(object):
     def __init__(self):
@@ -267,7 +285,7 @@ class RandomColorJitter(object):
         RGB_img = T.ColorJitter(brightness=0.1, contrast=0.1, saturation=0, hue=0)(torch.from_numpy(RGB_img))
         gray_img = T.Grayscale(num_output_channels=1)(RGB_img)
         return gray_img, target
-        
+
 
 class CenterRandomCrop(object):
     def __init__(self, size):
@@ -282,11 +300,12 @@ class CenterRandomCrop(object):
             target_scale = random.uniform(min_scale, max_scale)
         else:
             target_scale = 1
-        crop_height = int(target_scale*image_height)
-        crop_width = int(target_scale*image_width)
-        crop_top = max(0, image_height-crop_height)
-        crop_left = max(0, image_width-crop_width)
+        crop_height = int(target_scale * image_height)
+        crop_width = int(target_scale * image_width)
+        crop_top = max(0, image_height - crop_height)
+        crop_left = max(0, image_width - crop_width)
         return crop(img, target, (crop_top, crop_left, crop_height, crop_width))
+
 
 class ToTensor(object):
     def __call__(self, img, target):

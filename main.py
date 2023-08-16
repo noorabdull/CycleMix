@@ -2,31 +2,25 @@ import os
 import argparse
 import datetime
 import random
-import json
 import time
 from pathlib import Path
 from tensorboardX import SummaryWriter
-import clr
 import numpy as np
 import torch
-from copy import deepcopy
-torch.multiprocessing.set_sharing_strategy('file_system')
-
 from torch.utils.data import DataLoader, DistributedSampler
-import data
-#from mmdet import datasets
 import util.misc as utils
 from data import build
 from engines import train_one_epoch
 from inference import infer, evaluate
 from models import build_model
+torch.multiprocessing.set_sharing_strategy('file_system')
 
 
 def get_args_parser():
     # define task, label values, and output channels
     tasks = {
         'MR': {'lab_values': [0, 1, 2, 3, 4, 5], 'out_channels': 4}
-        }
+    }
     parser = argparse.ArgumentParser('Set transformer detector', add_help=False)
     parser.add_argument('--lr', default=1e-4, type=float)
     parser.add_argument('--batch_size', default=1, type=int)
@@ -40,13 +34,14 @@ def get_args_parser():
     parser.add_argument('--frozen_weights', type=str, default=None,
                         help="Path to the pretrained model. If set, only the mask head will be trained")
     parser.add_argument('--in_channels', default=1, type=int)
-    
+
     # Puzzle Mix
     parser.add_argument('--in_batch', type=str2bool, default=False, help='whether to use different lambdas in batch')
-    parser.add_argument('--mixup_alpha',default=0.5, type=float, help='alpha parameter for mixup')
+    parser.add_argument('--mixup_alpha', default=0.5, type=float, help='alpha parameter for mixup')
     parser.add_argument('--box', type=str2bool, default=False, help='true for CutMix')
     parser.add_argument('--graph', type=str2bool, default=True, help='true for PuzzleMix')
-    parser.add_argument('--neigh_size', type=int, default=4, help='neighbor size for computing distance beteeen image regions')
+    parser.add_argument('--neigh_size', type=int, default=4,
+                        help='neighbor size for computing distance beteeen image regions')
     parser.add_argument('--n_labels', type=int, default=3, help='label space size')
 
     parser.add_argument('--beta', type=float, default=1.2, help='label smoothness')
@@ -55,14 +50,14 @@ def get_args_parser():
 
     parser.add_argument('--transport', type=str2bool, default=True, help='whether to use transport')
     parser.add_argument('--t_eps', type=float, default=0.8, help='transport cost coefficient')
-    parser.add_argument('--t_size', type=int, default=4, help='transport resolution. -1 for using the same resolution with graphcut')
+    parser.add_argument('--t_size', type=int, default=4,
+                        help='transport resolution. -1 for using the same resolution with graphcut')
 
     parser.add_argument('--adv_eps', type=float, default=10.0, help='adversarial training ball')
     parser.add_argument('--adv_p', type=float, default=0.0, help='adversarial training probability')
 
     parser.add_argument('--clean_lam', type=float, default=0.0, help='clean input regularization')
     parser.add_argument('--mp', type=int, default=8, help='multi-process for graphcut (CPU)')
-
 
     # * Loss coefficients
     parser.add_argument('--multiDice_loss_coef', default=0, type=float)
@@ -71,7 +66,7 @@ def get_args_parser():
     parser.add_argument('--Lv', default=1, type=float)
     parser.add_argument('--Myo', default=1, type=float)
     parser.add_argument('--Avg', default=1, type=float)
-    
+
     # dataset parameters
     parser.add_argument('--dataset', default='MSCMR_dataset', type=str,
                         help='multi-sequence CMR segmentation dataset')
@@ -80,12 +75,12 @@ def get_args_parser():
                         help='path where to save, empty for no saving')
     parser.add_argument('--device', default='cuda', type=str,
                         help='device to use for training / testing')
-    parser.add_argument('--GPU_ids', type=str, default = '1', help = 'Ids of GPUs')    
+    parser.add_argument('--GPU_ids', type=str, default='1', help='Ids of GPUs')
     parser.add_argument('--seed', default=42, type=int)
     parser.add_argument('--resume', default='', help='resume from checkpoint')
     parser.add_argument('--start_epoch', default=0, type=int, metavar='N',
                         help='start epoch')
-    parser.add_argument('--eval', default = False , action='store_true')
+    parser.add_argument('--eval', default=False, action='store_true')
     parser.add_argument('--num_workers', default=0, type=int)
 
     # distributed training parameters
@@ -97,7 +92,7 @@ def get_args_parser():
 
 def str2bool(v):
     if isinstance(v, bool):
-       return v
+        return v
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
         return True
     elif v.lower() in ('no', 'false', 'f', 'n', '0'):
@@ -105,10 +100,11 @@ def str2bool(v):
     else:
         raise argparse.ArgumentTypeError('Boolean value expected.')
 
+
 def main(args):
     writer = SummaryWriter(log_dir=args.output_dir + '/summary')
-    args.mean = torch.tensor([0.5], dtype=torch.float32).reshape(1,1,1,1).cuda()
-    args.std = torch.tensor([0.5], dtype=torch.float32).reshape(1,1,1,1).cuda()
+    args.mean = torch.tensor([0.5], dtype=torch.float32).reshape(1, 1, 1, 1).cuda()
+    args.std = torch.tensor([0.5], dtype=torch.float32).reshape(1, 1, 1, 1).cuda()
 
     device = torch.device(args.device)
     torch.backends.cuda.matmul.allow_tf32 = True
@@ -133,7 +129,7 @@ def main(args):
 
     param_dicts = [{"params": [p for n, p in model_without_ddp.named_parameters() if p.requires_grad]}]
     optimizer = torch.optim.Adam(param_dicts, lr=args.lr,
-                                  weight_decay=args.weight_decay)
+                                    weight_decay=args.weight_decay)
     lr_scheduler = torch.optim.lr_scheduler.StepLR(optimizer, args.lr_drop)
 
     print('Building training dataset...')
@@ -146,21 +142,21 @@ def main(args):
     num_val = [len(v) for v in dataset_val_dict.values()]
     print('Number of validation images: {}'.format(sum(num_val)))
 
+    sampler_train_dict = {k: torch.utils.data.RandomSampler(v) for k, v in dataset_train_dict.items()}
+    sampler_val_dict = {k: torch.utils.data.SequentialSampler(v) for k, v in dataset_val_dict.items()}
 
-    sampler_train_dict = {k : torch.utils.data.RandomSampler(v) for k, v in dataset_train_dict.items()}
-    sampler_val_dict = {k : torch.utils.data.SequentialSampler(v) for k, v in dataset_val_dict.items()}
-
-    batch_sampler_train = { 
-        k : torch.utils.data.BatchSampler(v, args.batch_size, drop_last=True) for k, v in sampler_train_dict.items()
-        }
+    batch_sampler_train = {
+        k: torch.utils.data.BatchSampler(v, args.batch_size, drop_last=True) for k, v in sampler_train_dict.items()
+    }
     dataloader_train_dict = {
-        k : DataLoader(v1, batch_sampler=v2, collate_fn=utils.collate_fn, num_workers=args.num_workers) 
+        k: DataLoader(v1, batch_sampler=v2, collate_fn=utils.collate_fn, num_workers=args.num_workers)
         for (k, v1), v2 in zip(dataset_train_dict.items(), batch_sampler_train.values())
-        }
+    }
     dataloader_val_dict = {
-        k : DataLoader(v1, args.batch_size, sampler=v2, drop_last=False, collate_fn=utils.collate_fn, num_workers=args.num_workers) 
+        k: DataLoader(v1, args.batch_size, sampler=v2, drop_last=False, collate_fn=utils.collate_fn,
+                      num_workers=args.num_workers)
         for (k, v1), v2 in zip(dataset_val_dict.items(), sampler_val_dict.values())
-        }
+    }
 
     if args.frozen_weights is not None:
         checkpoint = torch.load(args.frozen_weights, map_location='cpu')
@@ -185,7 +181,7 @@ def main(args):
     for epoch in range(args.start_epoch, args.epochs):
         # use cyclic learning rate
         # optimizer.param_groups[0]['lr'] = clr.cyclic_learning_rate(epoch, mode='exp_range', gamma=1)
-        train_stats = train_one_epoch(model, criterion, dataloader_train_dict, optimizer, device, epoch,args,writer)
+        train_stats = train_one_epoch(model, criterion, dataloader_train_dict, optimizer, device, epoch, args, writer)
         ## lr_scheduler
         lr_scheduler.step()
 
@@ -206,7 +202,7 @@ def main(args):
             # You can change the threshold
             if dice_score > 0.50:
                 print("Update high dice score model!")
-                file_name = str(dice_score)[0:6]+'new_checkpoint.pth'
+                file_name = str(dice_score)[0:6] + 'new_checkpoint.pth'
                 checkpoint_paths.append(output_dir / file_name)
 
             # extra checkpoint before LR drop and every 100 epochs
@@ -220,7 +216,6 @@ def main(args):
                     'epoch': epoch,
                     'args': args,
                 }, checkpoint_path)
-
 
     total_time = time.time() - start_time
     total_time_str = str(datetime.timedelta(seconds=int(total_time)))

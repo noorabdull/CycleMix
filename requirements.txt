@@ -1,3 +1,4 @@
+torchvision
 scipy
 tensorboardX
 mmdet 
@@ -5,3 +6,6 @@ mmcv
 einops
 SimpleITK
 scikit-image
+numpy
+Pillow
+matplotlib
