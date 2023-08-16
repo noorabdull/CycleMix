@@ -177,7 +177,7 @@ class Rescale(object):
                                 order=1,
                                 preserve_range=True,
                                 # multichannel=False,
-                                channel_axis=False,
+                                # channel_axis=False,
                                 mode='constant')
         img = np.expand_dims(img, axis=0)
         if "masks" in target:
@@ -187,7 +187,7 @@ class Rescale(object):
                                      order=0,
                                      preserve_range=True,
                                      # multichannel=False,
-                                     channel_axis=False,
+                                    #  channel_axis=False,
                                      anti_aliasing=False,
                                      mode='constant')
             mask = np.expand_dims(mask, axis=0)
